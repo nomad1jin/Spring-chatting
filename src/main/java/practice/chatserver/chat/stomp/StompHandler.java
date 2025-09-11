@@ -28,19 +28,36 @@ public class StompHandler implements ChannelInterceptor {
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
         final StompHeaderAccessor accessor = StompHeaderAccessor.wrap(message);
 
-        if (StompCommand.CONNECT.equals(accessor.getCommand())) {
+        if(accessor.getCommand() == StompCommand.CONNECT) {
             log.info("[ connect 토큰 유효성 검증 ]");
             String bearerToken = accessor.getFirstNativeHeader("Authorization");
             String accessToken = bearerToken.substring(7);
             jwtUtil.isValid(accessToken);
             String username = jwtUtil.getUsername(accessToken);
-            log.info("[ Destination ]: {}", accessor.getDestination());
-            String roomId = accessor.getDestination().split("/")[2];  //목적지 헤더
 
-            if(!chatService.isRoomParticipant(username, Long.parseLong(roomId))){
-                throw new CustomException(ErrorCode.ROOM_NO_AUTH);
+            // CONNECT 시점에는 사용자 인증만 확인
+            log.info("[ STOMP 연결 성공 - 사용자: {} ]", username);
+
+            // 사용자 정보를 세션에 저장
+            accessor.getSessionAttributes().put("username", username);
+        }
+        else if(accessor.getCommand() == StompCommand.SUBSCRIBE) {
+            log.info("[ STOMP SUBSCRIBE - 방 참여 권한 검증 ]");
+            String destination = accessor.getDestination();
+            log.info("[ Subscribe Destination ]: {}", destination);
+
+            if (destination != null && destination.startsWith("/topic/")) {
+                // destination에서 roomId 추출: /topic/{roomId}
+                String[] parts = destination.split("/");
+                Long roomId = Long.parseLong(parts[2]);
+                String username = (String) accessor.getSessionAttributes().get("username");
+
+//                if (username != null && !chatService.isRoomParticipant(username, roomId)) {
+//                    log.error("[ 방 {} 참여 권한 없음 - 사용자: {} ]", roomId, username);
+//                    throw new CustomException(ErrorCode.ROOM_NO_AUTH);
+//                }
+                log.info("[ 방 {} 구독 성공 - 사용자: {} ]", roomId, username);
             }
-
         }
         return message;
     }

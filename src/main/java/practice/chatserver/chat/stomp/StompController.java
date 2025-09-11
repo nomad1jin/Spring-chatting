@@ -25,14 +25,14 @@ public class StompController {
     @MessageMapping("/room/{roomId}/sendto")
     @SendTo("/topic/{roomId}")
     public ChatMessage sendMessage1(@DestinationVariable Long roomId, ChatReqDTO.ChatMessageReqDTO chatMessageReqDTO){
-        log.debug("[ sendMessage1 : {} ]", chatMessageReqDTO.getMessage());
+        log.info("[ sendMessage1 : {} ]", chatMessageReqDTO.getMessage());
         return chatService.saveMessage(chatMessageReqDTO);
     }
 
     // 방법2. MessageMapping만 활용
     @MessageMapping("/room/{roomId}")
     public void sendMessage2(@DestinationVariable Long roomId, ChatReqDTO.ChatMessageReqDTO chatMessageReqDTO){
-        log.debug("[ sendMessage2 : {} ]", chatMessageReqDTO.getMessage());
+        log.info("[ sendMessage2 : {} ]", chatMessageReqDTO.getMessage());
         chatService.saveMessage(chatMessageReqDTO);
         messageTemplate.convertAndSend("/topic/" + roomId, chatMessageReqDTO.getMessage());
     }
