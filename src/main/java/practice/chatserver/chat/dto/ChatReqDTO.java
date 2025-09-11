@@ -10,7 +10,18 @@ public class ChatReqDTO {
     @Data
     public static class ChatMessageReqDTO {
         private Long roomId;
-        private String senderName;
+        private Long memberId;
         private String message;
+    }
+
+    @Data
+    public static class ChatRoomCreateDTO {
+        private Long targetId;
+        private String roomName;
+    }
+
+    @Data
+    public static class ChatRoomCardDTO {
+        private Long roomId;
     }
 }

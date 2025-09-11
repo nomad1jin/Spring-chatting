@@ -1,6 +1,7 @@
 package practice.chatserver.chat.service;
 
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -16,7 +17,9 @@ import practice.chatserver.global.apiPayload.code.CustomException;
 import practice.chatserver.global.apiPayload.code.ErrorCode;
 import practice.chatserver.member.entity.Member;
 import practice.chatserver.member.repository.MemberRepository;
+import practice.chatserver.member.service.AuthCommandService;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,21 +32,21 @@ public class ChatService {
     private final ChatParticipantRepository chatParticipantRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomRepository chatRoomRepository;
-    private final MemberRepository memberRepository;
+    private final ChatRoomService chatRoomService;
+    private final ChatParticipantService chatParticipantService;
+    private final AuthCommandService authCommandService;
 
     public ChatMessage saveMessage(ChatReqDTO.ChatMessageReqDTO chatMessageReqDTO) {
         //채팅방 조회
-        ChatRoom chatRoom = chatRoomRepository.findById(chatMessageReqDTO.getRoomId())
-                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOTFOUND));
+        ChatRoom chatRoom = chatRoomService.getChatRoom(chatMessageReqDTO.getRoomId());
 
-        //보낸 사람 조회
-        Member sender = memberRepository.findByUsername(chatMessageReqDTO.getSenderName())
-                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOTFOUND));
+        //참여자 조회
+        ChatParticipant sender = chatParticipantService.findByMemberId(chatMessageReqDTO.getMemberId());
 
         //메시지 저장
         ChatMessage chatMessage = ChatMessage.builder()
                 .chatRoom(chatRoom)
-                .member(sender)
+                .participant(sender)
                 .chatMessage(chatMessageReqDTO.getMessage())
                 .isRead(false)  // 추후 더 생각해볼것
                 .build();
@@ -52,24 +55,25 @@ public class ChatService {
         return savedMessage;
     }
 
-    public void createRoom(String roomName) {
-        //챗룸과 참여자
-        Member member = memberRepository.findByUsername(SecurityContextHolder.getContext().getAuthentication().getName())
-                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOTFOUND));
+    @Transactional
+    public void createRoom(Long initiatorId, Long targetId, String roomName) {
+        // 사용자 검증
+        Member initiator = authCommandService.findById(initiatorId);
+        Member target = authCommandService.findById(targetId);
 
-        // 채팅방 생성
-        ChatRoom chatRoom = ChatRoom.builder()
-                .roomName(roomName)
-                .build();
-        chatRoomRepository.save(chatRoom);
+        // 중복방 체크하고 없으면 생성
+        chatRoomService.findExistingRoom(initiatorId, targetId);
+        ChatRoom chatRoom = chatRoomService.makeChatRoom(roomName);
 
-        // 채팅참여자로 개설자 추가
-        ChatParticipant chatParticipant = ChatParticipant.builder()
-                .chatRoom(chatRoom)
-                .member(member)
-                .build();
-        chatParticipantRepository.save(chatParticipant);
+        // 두 참여자 모두 추가
+        List<ChatParticipant> participants = Arrays.asList(
+                ChatParticipant.builder().chatRoom(chatRoom).member(initiator).build(),
+                ChatParticipant.builder().chatRoom(chatRoom).member(target).build()
+        );
+        chatParticipantRepository.saveAll(participants);
     }
+
+
 
 
 //    public List<ChatResDTO.ChatRoomListResDTO> getGroupChatRooms() {

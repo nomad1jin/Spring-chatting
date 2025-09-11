@@ -25,7 +25,7 @@ public class ChatRoom {
     @Enumerated(EnumType.STRING)
     private RoomStatus roomStatus;
 
-    @OneToMany(mappedBy = "chatRoom")
+    @OneToMany(mappedBy = "chatRoom", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ChatParticipant> participants = new ArrayList<>();
 
     @OneToMany(mappedBy = "chatRoom")

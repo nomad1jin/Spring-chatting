@@ -38,7 +38,9 @@ public enum ErrorCode implements BaseCode {
     ROOM_NOTFOUND(HttpStatus.NOT_FOUND, "ROOM_NOTFOUND", "채팅방이 없습니다."),
     PARTICIPANT_NOTFOUND(HttpStatus.NOT_FOUND, "PARTICIPANT_NOTFOUND", "참여자가 없습니다."),
 
-    ROOM_NO_AUTH(HttpStatus.UNAUTHORIZED, "ROOM_403" ,"해당 채팅방에 권한이 없습니다.");
+    ROOM_NO_AUTH(HttpStatus.UNAUTHORIZED, "ROOM_403" ,"해당 채팅방에 권한이 없습니다."),
+
+    MESSAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "MESSAGE_404", "채팅 메시지가 없습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

@@ -10,20 +10,22 @@ import practice.chatserver.chat.domain.ChatMessage;
 public class ChatResDTO {
 
     @Data
+    @AllArgsConstructor
+    public static class ChatRoomCardDTO {
+        Long roomId;
+        String roomName;
+        String nickName;
+        String message;
+        Long unreadCount;
+    }
+
+    @Data
     @NoArgsConstructor
     @AllArgsConstructor
     public static class ChatMessageResDTO {
         private Long roomId;
         private String senderName;
         private String message;
-
-        public static ChatMessageResDTO from(ChatMessage chatMessage) {
-            return new ChatMessageResDTO(
-                    chatMessage.getChatRoom().getId(),
-                    chatMessage.getMember().getUsername(),
-                    chatMessage.getChatMessage()
-            );
-        }
     }
 
     @Data
