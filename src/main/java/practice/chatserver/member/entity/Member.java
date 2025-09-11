@@ -6,7 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import practice.chatserver.chat.domain.ChatParticipation;
+import practice.chatserver.chat.domain.ChatParticipant;
 import practice.chatserver.member.enums.Gender;
 import practice.chatserver.member.enums.Type;
 
@@ -56,5 +56,5 @@ public class Member {
     private String email;
 
     @OneToMany(mappedBy = "member")
-    private List<ChatParticipation> participations = new ArrayList<>();
+    private List<ChatParticipant> participants= new ArrayList<>();
 }

@@ -5,29 +5,31 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import practice.chatserver.member.entity.Member;
 
 import java.util.ArrayList;
 import java.util.List;
+
 
 @Entity
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ChatRoom {
+public class ChatParticipant {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private String roomName;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id")
+    private Member member;
 
-    @Enumerated(EnumType.STRING)
-    private RoomStatus roomStatus;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "room_id")
+    private ChatRoom chatRoom;
 
-    @OneToMany(mappedBy = "chatRoom")
-    private List<ChatParticipant> participants = new ArrayList<>();
-
-    @OneToMany(mappedBy = "chatRoom")
+    @OneToMany(mappedBy = "participant", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ChatMessage> chatMessages = new ArrayList<>();
 }
+

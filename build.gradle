@@ -35,7 +35,6 @@ dependencies {
 
     // 웹소켓
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
-    implementation 'org.springframework.boot:spring-boot-starter-websocket'
 
     // mysql, jpa
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'

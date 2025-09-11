@@ -1,63 +1,61 @@
 package practice.chatserver.chat.service;
 
-import jakarta.persistence.EntityNotFoundException;
+
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import practice.chatserver.chat.dto.ChatReqDTO;
 import practice.chatserver.chat.domain.ChatMessage;
-import practice.chatserver.chat.domain.ChatParticipation;
+import practice.chatserver.chat.domain.ChatParticipant;
 import practice.chatserver.chat.domain.ChatRoom;
-import practice.chatserver.chat.dto.ChatResDTO;
 import practice.chatserver.chat.repository.ChatMessageRepository;
-import practice.chatserver.chat.repository.ChatParticipationRepository;
+import practice.chatserver.chat.repository.ChatParticipantRepository;
 import practice.chatserver.chat.repository.ChatRoomRepository;
+import practice.chatserver.global.apiPayload.code.CustomException;
+import practice.chatserver.global.apiPayload.code.ErrorCode;
 import practice.chatserver.member.entity.Member;
 import practice.chatserver.member.repository.MemberRepository;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
+
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ChatService {
 
-    private final ChatParticipationRepository chatParticipationRepository;
+    private final ChatParticipantRepository chatParticipantRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomRepository chatRoomRepository;
     private final MemberRepository memberRepository;
 
-    public void sendMessage(Long roomId, ChatReqDTO.ChatMessageReqDTO chatMessageReqDTO) {
+    public ChatMessage saveMessage(ChatReqDTO.ChatMessageReqDTO chatMessageReqDTO) {
         //채팅방 조회
-        ChatRoom chatRoom = chatRoomRepository.findById(roomId)
-                .orElseThrow(() -> new EntityNotFoundException("No Room"));
+        ChatRoom chatRoom = chatRoomRepository.findById(chatMessageReqDTO.getRoomId())
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOTFOUND));
 
         //보낸 사람 조회
         Member sender = memberRepository.findByUsername(chatMessageReqDTO.getSenderName())
-                .orElseThrow(() -> new EntityNotFoundException("Member not found"));
-
-        //복합키 participation 조회
-        ChatParticipation chatParticipation = chatParticipationRepository.findByMemberAndChatRoom(sender, chatRoom)
-                .orElseThrow(() -> new EntityNotFoundException("Chat Participation not found"));
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOTFOUND));
 
         //메시지 저장
         ChatMessage chatMessage = ChatMessage.builder()
-                .participation(chatParticipation)   //participation에서 꺼내야함을 잊지 말 것...
-                .message(chatMessageReqDTO.getMessage())
+                .chatRoom(chatRoom)
+                .member(sender)
+                .chatMessage(chatMessageReqDTO.getMessage())
+                .isRead(false)  // 추후 더 생각해볼것
                 .build();
-        chatMessageRepository.save(chatMessage);
 
-//        //사용자별로 읽음 여부 저장
-//        List<ChatParticipation> chatParticipationList = chatParticipationRepository.findByMemberAndChatRoom(sender, chatRoom);
-//        for()
-
+        ChatMessage savedMessage = chatMessageRepository.save(chatMessage);
+        return savedMessage;
     }
 
-    public void createGroupRoom(String roomName) {
+    public void createRoom(String roomName) {
         //챗룸과 참여자
         Member member = memberRepository.findByUsername(SecurityContextHolder.getContext().getAuthentication().getName())
-                .orElseThrow(() -> new EntityNotFoundException("Username not found"));
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOTFOUND));
 
         // 채팅방 생성
         ChatRoom chatRoom = ChatRoom.builder()
@@ -66,10 +64,11 @@ public class ChatService {
         chatRoomRepository.save(chatRoom);
 
         // 채팅참여자로 개설자 추가
-        ChatParticipation chatParticipation = ChatParticipation.builder()
+        ChatParticipant chatParticipant = ChatParticipant.builder()
                 .chatRoom(chatRoom)
                 .member(member)
                 .build();
+        chatParticipantRepository.save(chatParticipant);
     }
 
 
@@ -103,15 +102,46 @@ public class ChatService {
 //        }
 
 
-    public void readMessage(Long roomId) {
-        ChatRoom chatRoom =  chatRoomRepository.findById(roomId)
-                .orElseThrow(() -> new EntityNotFoundException("Room not found"));
-        Member member = memberRepository.findByEmail(SecurityContextHolder.getContext().getAuthentication().getName())
-                .orElseThrow(() -> new EntityNotFoundException("Member not found"));
-        List<ReadStatus> readStatuses = readStatusRepository.findByChatRoomAndMember(chatRoom, member);
+//    public void readMessage(Long roomId) {
+//        ChatRoom chatRoom =  chatRoomRepository.findById(roomId)
+//                .orElseThrow(() -> new EntityNotFoundException("Room not found"));
+//        Member member = memberRepository.findByEmail(SecurityContextHolder.getContext().getAuthentication().getName())
+//                .orElseThrow(() -> new EntityNotFoundException("Member not found"));
+//        List<ReadStatus> readStatuses = readStatusRepository.findByChatRoomAndMember(chatRoom, member);
+//
+//
+//    }
 
+    // 참여자인지 검증
+    public boolean isRoomParticipant(String username, Long roomId) {
+        ChatRoom chatRoom = chatRoomRepository.findById(roomId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOTFOUND));
 
+        Member member = memberRepository.findByUsername(username)
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOTFOUND));
+
+        List<ChatParticipant> chatParticipants = chatParticipantRepository.findByChatRoom(chatRoom);
+        for (ChatParticipant chatParticipant : chatParticipants) {
+            if (chatParticipant.getMember().equals(member)) {
+                return true;
+            }
+        }
+        return false;
     }
 
+    // 로그인한 사람이 읽었는지 안 읽었는지
+    public void messageRead(Long roomId, Long memberId){
+        ChatRoom chatRoom = chatRoomRepository.findById(roomId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOTFOUND));
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOTFOUND));
+
+        // 채팅방에 속해있으면서 memberNot에 reader(나)을 넣으면 내가 아닌 사람이 읽지않은 경우를 가져옴
+        List<ChatMessage> unreadMessages =
+                chatMessageRepository.findByChatRoomAndMemberNotAndIsReadFalse(chatRoom, member);
+        for (ChatMessage chatMessage : unreadMessages) {
+            chatMessage.markAsRead();
+        }
+    }
 }
 

@@ -2,6 +2,7 @@ package practice.chatserver.global.jwt;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import lombok.extern.slf4j.Slf4j;
 import practice.chatserver.member.entity.Member;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -12,6 +13,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 
+@Slf4j
 @Component
 public class JwtUtil {
 
@@ -30,7 +32,7 @@ public class JwtUtil {
         this.refreshExpiration = Duration.ofMillis(refreshExpiration);
     }
 
-    //2. creatToken() 만들기
+    //2. createToken() 만들기
     private String createToken(Member member, Duration expiration) {
         Instant now = Instant.now();
         return Jwts.builder()
@@ -74,6 +76,7 @@ public class JwtUtil {
     public boolean isValid(String token) {
         try {
             getClaims(token);
+            log.info("[ access 토큰 유효성 검증 완료 ]");
             return true;
         } catch (JwtException e) {
             return false;

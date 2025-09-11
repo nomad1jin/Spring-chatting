@@ -4,12 +4,27 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import practice.chatserver.chat.domain.ChatMessage;
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
-@Builder
 public class ChatResDTO {
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ChatMessageResDTO {
+        private Long roomId;
+        private String senderName;
+        private String message;
+
+        public static ChatMessageResDTO from(ChatMessage chatMessage) {
+            return new ChatMessageResDTO(
+                    chatMessage.getChatRoom().getId(),
+                    chatMessage.getMember().getUsername(),
+                    chatMessage.getChatMessage()
+            );
+        }
+    }
 
     @Data
     public static class ChatRoomListResDTO{
@@ -24,7 +39,7 @@ public class ChatResDTO {
     }
 
     @Data
-    public class ChatHistoryResDTO {
+    public static class ChatHistoryResDTO {
         private String senderName;
         private String message;
     }

@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import practice.chatserver.member.entity.Member;
 
 @Entity
 @Getter
@@ -17,23 +18,25 @@ public class ChatMessage {
     private Long id;
 
     @Column(nullable = false)
-    private String message;
+    private String chatMessage;
 
+    //    @Column(nullable = false)
     private boolean isRead;
 
-    @ManyToOne
-    @JoinColumns({
-            @JoinColumn(name="member_id", referencedColumnName="member_id"),
-            @JoinColumn(name="room_id", referencedColumnName="room_id")
-    })
-    private ChatParticipation participation;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "participant_id")
+    private ChatParticipant participant;
 
-    //ChatParticipation에 아무 속성도 없다면 사실상 조인테이블이므로 직접 매핑해도 무방
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "member_id", nullable = false)
-//    private Member member;
-//
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "room_id", nullable = false)
-//    private ChatRoom chatRoom;
+    @ManyToOne(fetch = FetchType.LAZY) // 메시지 보낸 회원
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member member;
+
+    @ManyToOne(fetch = FetchType.LAZY) // 메시지가 속한 채팅방
+    @JoinColumn(name = "room_id", nullable = false)
+    private ChatRoom chatRoom;
+
+    public void markAsRead(){
+        this.isRead = true;
+    }
+
 }
