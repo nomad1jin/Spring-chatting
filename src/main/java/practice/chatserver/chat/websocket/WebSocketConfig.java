@@ -1,4 +1,4 @@
-package practice.chatserver.chat;
+package practice.chatserver.chat.websocket;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
