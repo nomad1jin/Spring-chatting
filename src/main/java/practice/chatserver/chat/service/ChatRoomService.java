@@ -23,7 +23,6 @@ import java.util.Optional;
 public class ChatRoomService {
 
     private final ChatRoomRepository chatRoomRepository;
-    private final ChatRoomService chatRoomService;
     private final ChatMessageService chatMessageService;
     private final ChatParticipantService chatParticipantService;
     private final AuthCommandService authCommandService;
@@ -61,7 +60,7 @@ public class ChatRoomService {
                 .toList();
     }
 
-    public ChatRoom findExistingRoom(Long initiatorId, Long targetId) {
+    public Optional<ChatRoom> findExistingRoom(Long initiatorId, Long targetId) {
         return chatRoomRepository.findExistingRoom(initiatorId, targetId);
     }
 

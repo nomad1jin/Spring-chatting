@@ -22,6 +22,6 @@ public class ChatMessageService {
     }
 
     public Long getUnreadCount(ChatRoom room, Member member) {
-        return chatMessageRepository.countByChatRoomAndReceiverAndIsReadFalse(room, member);
+        return chatMessageRepository.countByChatRoomAndMemberNotAndIsReadFalse(room, member);
     }
 }

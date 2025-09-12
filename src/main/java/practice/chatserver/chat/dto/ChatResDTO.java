@@ -11,6 +11,13 @@ public class ChatResDTO {
 
     @Data
     @AllArgsConstructor
+    public static class ChatRoomCreatedDTO {
+        Long roomId;
+        String roomName;
+    }
+
+    @Data
+    @AllArgsConstructor
     public static class ChatRoomCardDTO {
         Long roomId;
         String roomName;

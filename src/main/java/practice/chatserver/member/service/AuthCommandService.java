@@ -13,4 +13,5 @@ public interface AuthCommandService {
     void logout(HttpServletRequest request,  HttpServletResponse response);
     AuthResponseDTO.ReissueResponseDTO reissue(AuthRequestDTO.ReissueRequestDTO dto);
     Member findById(Long memberId);
+    Member findByUsername(String username);
 }

@@ -100,5 +100,4 @@ public class JwtUtil {
     public String createRefreshToken(Member member) {
         return createToken(member, refreshExpiration);
     }
-
 }

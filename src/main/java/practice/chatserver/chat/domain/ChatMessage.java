@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import practice.chatserver.member.entity.Member;
 
 @Entity
@@ -33,6 +35,7 @@ public class ChatMessage {
 
     @ManyToOne(fetch = FetchType.LAZY) // 메시지가 속한 채팅방
     @JoinColumn(name = "room_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private ChatRoom chatRoom;
 
     public void markAsRead(){

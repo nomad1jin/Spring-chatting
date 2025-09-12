@@ -4,19 +4,15 @@ package practice.chatserver.chat.service;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import practice.chatserver.chat.dto.ChatReqDTO;
 import practice.chatserver.chat.domain.ChatMessage;
 import practice.chatserver.chat.domain.ChatParticipant;
 import practice.chatserver.chat.domain.ChatRoom;
+import practice.chatserver.chat.dto.ChatResDTO;
 import practice.chatserver.chat.repository.ChatMessageRepository;
 import practice.chatserver.chat.repository.ChatParticipantRepository;
-import practice.chatserver.chat.repository.ChatRoomRepository;
-import practice.chatserver.global.apiPayload.code.CustomException;
-import practice.chatserver.global.apiPayload.code.ErrorCode;
 import practice.chatserver.member.entity.Member;
-import practice.chatserver.member.repository.MemberRepository;
 import practice.chatserver.member.service.AuthCommandService;
 
 import java.util.Arrays;
@@ -31,7 +27,6 @@ public class ChatService {
 
     private final ChatParticipantRepository chatParticipantRepository;
     private final ChatMessageRepository chatMessageRepository;
-    private final ChatRoomRepository chatRoomRepository;
     private final ChatRoomService chatRoomService;
     private final ChatParticipantService chatParticipantService;
     private final AuthCommandService authCommandService;
@@ -47,6 +42,7 @@ public class ChatService {
         ChatMessage chatMessage = ChatMessage.builder()
                 .chatRoom(chatRoom)
                 .participant(sender)
+                .member(sender.getMember())
                 .chatMessage(chatMessageReqDTO.getMessage())
                 .isRead(false)  // 추후 더 생각해볼것
                 .build();
@@ -56,13 +52,17 @@ public class ChatService {
     }
 
     @Transactional
-    public void createRoom(Long initiatorId, Long targetId, String roomName) {
+    public ChatResDTO.ChatRoomCreatedDTO createRoom(Long initiatorId, Long targetId, String roomName) {
         // 사용자 검증
         Member initiator = authCommandService.findById(initiatorId);
         Member target = authCommandService.findById(targetId);
 
         // 중복방 체크하고 없으면 생성
-        chatRoomService.findExistingRoom(initiatorId, targetId);
+        Optional<ChatRoom> existingRoom = chatRoomService.findExistingRoom(initiatorId, targetId);
+        if(existingRoom.isPresent()) {
+            ChatRoom chatRoom = existingRoom.get();
+            return new ChatResDTO.ChatRoomCreatedDTO(chatRoom.getId(), chatRoom.getRoomName());
+        }
         ChatRoom chatRoom = chatRoomService.makeChatRoom(roomName);
 
         // 두 참여자 모두 추가
@@ -71,6 +71,8 @@ public class ChatService {
                 ChatParticipant.builder().chatRoom(chatRoom).member(target).build()
         );
         chatParticipantRepository.saveAll(participants);
+
+        return new ChatResDTO.ChatRoomCreatedDTO(chatRoom.getId(), chatRoom.getRoomName());
     }
 
 
@@ -118,27 +120,14 @@ public class ChatService {
 
     // 참여자인지 검증
     public boolean isRoomParticipant(String username, Long roomId) {
-        ChatRoom chatRoom = chatRoomRepository.findById(roomId)
-                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOTFOUND));
-
-        Member member = memberRepository.findByUsername(username)
-                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOTFOUND));
-
-        List<ChatParticipant> chatParticipants = chatParticipantRepository.findByChatRoom(chatRoom);
-        for (ChatParticipant chatParticipant : chatParticipants) {
-            if (chatParticipant.getMember().equals(member)) {
-                return true;
-            }
-        }
-        return false;
+        Member member = authCommandService.findByUsername(username);
+        return chatParticipantRepository.existsByChatRoomIdAndMemberId(roomId, member.getId());
     }
 
     // 로그인한 사람이 읽었는지 안 읽었는지
     public void messageRead(Long roomId, Long memberId){
-        ChatRoom chatRoom = chatRoomRepository.findById(roomId)
-                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOTFOUND));
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOTFOUND));
+        ChatRoom chatRoom = chatRoomService.getChatRoom(roomId);
+        Member member = authCommandService.findById(memberId);
 
         // 채팅방에 속해있으면서 memberNot에 reader(나)을 넣으면 내가 아닌 사람이 읽지않은 경우를 가져옴
         List<ChatMessage> unreadMessages =

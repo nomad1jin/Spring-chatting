@@ -17,7 +17,7 @@ import practice.chatserver.global.jwt.CustomUserDetails;
 
 import java.util.List;
 
-@Controller
+@RestController
 @RequiredArgsConstructor
 @Slf4j
 @RequestMapping("/chat")
@@ -28,17 +28,17 @@ public class ChatController {
 
     @Operation(summary = "채팅방", description = "채팅방 생성하기 ")
     @PostMapping("/room/create")
-    public CustomResponse<?> createRoom(@RequestBody ChatReqDTO.ChatRoomCreateDTO dto,
+    public CustomResponse<ChatResDTO.ChatRoomCreatedDTO> createRoom(@RequestBody ChatReqDTO.ChatRoomCreateDTO dto,
                                         @AuthenticationPrincipal CustomUserDetails userDetails) {
-        chatService.createRoom(userDetails.getId(), dto.getTargetId(), dto.getRoomName());
-        return CustomResponse.onSuccess(SuccessCode.CREATED);
+        ChatResDTO.ChatRoomCreatedDTO room = chatService.createRoom(userDetails.getId(), dto.getTargetId(), dto.getRoomName());
+        return CustomResponse.onSuccess(SuccessCode.CREATED, room);
     }
 
     @Operation(summary = "채팅방 카드 단일 조회", description = "채팅방 카드 단일 조회하기 ")
     @GetMapping("/room/card")
-    public CustomResponse<ChatResDTO.ChatRoomCardDTO> getRoomCard(@RequestBody ChatReqDTO.ChatRoomCardDTO dto,
+    public CustomResponse<ChatResDTO.ChatRoomCardDTO> getRoomCard(@RequestParam Long roomId,
                                                                   @AuthenticationPrincipal CustomUserDetails userDetails) {
-        ChatResDTO.ChatRoomCardDTO chatRoom = chatRoomService.getChatRoomCard(dto.getRoomId(), userDetails.getId());
+        ChatResDTO.ChatRoomCardDTO chatRoom = chatRoomService.getChatRoomCard(roomId, userDetails.getId());
         return CustomResponse.onSuccess(SuccessCode.OK, chatRoom);
     }
 

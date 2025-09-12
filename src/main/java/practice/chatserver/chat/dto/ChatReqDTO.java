@@ -8,6 +8,7 @@ import lombok.Data;
 public class ChatReqDTO {
 
     @Data
+    @AllArgsConstructor
     public static class ChatMessageReqDTO {
         private Long roomId;
         private Long memberId;
@@ -15,13 +16,14 @@ public class ChatReqDTO {
     }
 
     @Data
+    @AllArgsConstructor
     public static class ChatRoomCreateDTO {
         private Long targetId;
         private String roomName;
     }
 
     @Data
-    public static class ChatRoomCardDTO {
+    public static class ChatCardReqDTO {
         private Long roomId;
     }
 }
