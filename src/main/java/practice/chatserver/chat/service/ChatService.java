@@ -28,54 +28,8 @@ public class ChatService {
     private final ChatParticipantRepository chatParticipantRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomService chatRoomService;
-    private final ChatParticipantService chatParticipantService;
+
     private final AuthCommandService authCommandService;
-
-    public ChatMessage saveMessage(ChatReqDTO.ChatMessageReqDTO chatMessageReqDTO) {
-        //채팅방 조회
-        ChatRoom chatRoom = chatRoomService.getChatRoom(chatMessageReqDTO.getRoomId());
-
-        //참여자 조회
-        ChatParticipant sender = chatParticipantService.findByMemberId(chatMessageReqDTO.getMemberId());
-
-        //메시지 저장
-        ChatMessage chatMessage = ChatMessage.builder()
-                .chatRoom(chatRoom)
-                .participant(sender)
-                .member(sender.getMember())
-                .chatMessage(chatMessageReqDTO.getMessage())
-                .isRead(false)  // 추후 더 생각해볼것
-                .build();
-
-        ChatMessage savedMessage = chatMessageRepository.save(chatMessage);
-        return savedMessage;
-    }
-
-    @Transactional
-    public ChatResDTO.ChatRoomCreatedDTO createRoom(Long initiatorId, Long targetId, String roomName) {
-        // 사용자 검증
-        Member initiator = authCommandService.findById(initiatorId);
-        Member target = authCommandService.findById(targetId);
-
-        // 중복방 체크하고 없으면 생성
-        Optional<ChatRoom> existingRoom = chatRoomService.findExistingRoom(initiatorId, targetId);
-        if(existingRoom.isPresent()) {
-            ChatRoom chatRoom = existingRoom.get();
-            return new ChatResDTO.ChatRoomCreatedDTO(chatRoom.getId(), chatRoom.getRoomName());
-        }
-        ChatRoom chatRoom = chatRoomService.makeChatRoom(roomName);
-
-        // 두 참여자 모두 추가
-        List<ChatParticipant> participants = Arrays.asList(
-                ChatParticipant.builder().chatRoom(chatRoom).member(initiator).build(),
-                ChatParticipant.builder().chatRoom(chatRoom).member(target).build()
-        );
-        chatParticipantRepository.saveAll(participants);
-
-        return new ChatResDTO.ChatRoomCreatedDTO(chatRoom.getId(), chatRoom.getRoomName());
-    }
-
-
 
 
 //    public List<ChatResDTO.ChatRoomListResDTO> getGroupChatRooms() {
@@ -118,23 +72,5 @@ public class ChatService {
 //
 //    }
 
-    // 참여자인지 검증
-    public boolean isRoomParticipant(String username, Long roomId) {
-        Member member = authCommandService.findByUsername(username);
-        return chatParticipantRepository.existsByChatRoomIdAndMemberId(roomId, member.getId());
-    }
-
-    // 로그인한 사람이 읽었는지 안 읽었는지
-    public void messageRead(Long roomId, Long memberId){
-        ChatRoom chatRoom = chatRoomService.getChatRoom(roomId);
-        Member member = authCommandService.findById(memberId);
-
-        // 채팅방에 속해있으면서 memberNot에 reader(나)을 넣으면 내가 아닌 사람이 읽지않은 경우를 가져옴
-        List<ChatMessage> unreadMessages =
-                chatMessageRepository.findByChatRoomAndMemberNotAndIsReadFalse(chatRoom, member);
-        for (ChatMessage chatMessage : unreadMessages) {
-            chatMessage.markAsRead();
-        }
-    }
 }
 

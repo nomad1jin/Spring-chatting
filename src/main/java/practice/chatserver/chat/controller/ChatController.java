@@ -30,7 +30,7 @@ public class ChatController {
     @PostMapping("/room/create")
     public CustomResponse<ChatResDTO.ChatRoomCreatedDTO> createRoom(@RequestBody ChatReqDTO.ChatRoomCreateDTO dto,
                                         @AuthenticationPrincipal CustomUserDetails userDetails) {
-        ChatResDTO.ChatRoomCreatedDTO room = chatService.createRoom(userDetails.getId(), dto.getTargetId(), dto.getRoomName());
+        ChatResDTO.ChatRoomCreatedDTO room = chatRoomService.createRoom(userDetails.getId(), dto.getTargetId(), dto.getRoomName());
         return CustomResponse.onSuccess(SuccessCode.CREATED, room);
     }
 

@@ -1,10 +1,12 @@
 package practice.chatserver.chat.service;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import practice.chatserver.chat.domain.ChatMessage;
+import practice.chatserver.chat.domain.ChatParticipant;
 import practice.chatserver.chat.domain.ChatRoom;
 import practice.chatserver.chat.dto.ChatResDTO;
 import practice.chatserver.chat.repository.ChatRoomRepository;
@@ -13,6 +15,7 @@ import practice.chatserver.global.apiPayload.code.ErrorCode;
 import practice.chatserver.member.entity.Member;
 import practice.chatserver.member.service.AuthCommandService;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,6 +29,31 @@ public class ChatRoomService {
     private final ChatMessageService chatMessageService;
     private final ChatParticipantService chatParticipantService;
     private final AuthCommandService authCommandService;
+
+    @Transactional
+    public ChatResDTO.ChatRoomCreatedDTO createRoom(Long initiatorId, Long targetId, String roomName) {
+        // 사용자 검증
+        Member initiator = authCommandService.findById(initiatorId);
+        Member target = authCommandService.findById(targetId);
+
+        // 중복방 체크하고 없으면 생성
+        Optional<ChatRoom> existingRoom = findExistingRoom(initiatorId, targetId);
+        if(existingRoom.isPresent()) {
+            ChatRoom chatRoom = existingRoom.get();
+            return new ChatResDTO.ChatRoomCreatedDTO(chatRoom.getId(), chatRoom.getRoomName());
+        }
+        ChatRoom chatRoom = makeChatRoom(roomName);
+
+        // 두 참여자 모두 추가
+        List<ChatParticipant> participants = Arrays.asList(
+                ChatParticipant.builder().chatRoom(chatRoom).member(initiator).build(),
+                ChatParticipant.builder().chatRoom(chatRoom).member(target).build()
+        );
+        chatParticipantService.saveAllParticipants(participants);
+
+        return new ChatResDTO.ChatRoomCreatedDTO(chatRoom.getId(), chatRoom.getRoomName());
+    }
+
 
     public ChatRoom getChatRoom(Long roomId) {
         ChatRoom chatroom = chatRoomRepository.findById(roomId)
