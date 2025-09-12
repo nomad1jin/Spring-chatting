@@ -7,6 +7,7 @@ import practice.chatserver.chat.domain.ChatParticipant;
 import practice.chatserver.chat.domain.ChatRoom;
 import practice.chatserver.chat.dto.ChatReqDTO;
 import practice.chatserver.chat.repository.ChatMessageRepository;
+import practice.chatserver.chat.repository.ChatRoomRepository;
 import practice.chatserver.global.apiPayload.code.CustomException;
 import practice.chatserver.global.apiPayload.code.ErrorCode;
 import practice.chatserver.member.entity.Member;
@@ -18,17 +19,19 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ChatMessageService {
 
-    private final ChatRoomService chatRoomService;
     private final ChatParticipantService chatParticipantService;
     private final AuthCommandService authCommandService;
     private final ChatMessageRepository chatMessageRepository;
+    private final ChatRoomRepository chatRoomRepository;
 
     public ChatMessage saveMessage(ChatReqDTO.ChatMessageReqDTO chatMessageReqDTO) {
         //채팅방 조회
-        ChatRoom chatRoom = chatRoomService.getChatRoom(chatMessageReqDTO.getRoomId());
+        ChatRoom chatRoom = chatRoomRepository.findById(chatMessageReqDTO.getRoomId())
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOTFOUND));
 
-        //참여자 조회
-        ChatParticipant sender = chatParticipantService.findByMemberId(chatMessageReqDTO.getMemberId());
+        //채팅방과 멤버 조회
+        ChatParticipant sender = chatParticipantService.findByMemberIdAndChatRoomId(
+                chatMessageReqDTO.getMemberId(), chatRoom.getId());
 
         //메시지 저장
         ChatMessage chatMessage = ChatMessage.builder()
@@ -54,7 +57,9 @@ public class ChatMessageService {
 
     // 읽음 여부 바꿈
     public void messageRead(Long roomId, Long memberId){
-        ChatRoom chatRoom = chatRoomService.getChatRoom(roomId);
+        ChatRoom chatRoom = chatRoomRepository.findById(roomId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOTFOUND));
+
         Member member = authCommandService.findById(memberId);
         markAsRead(chatRoom, member);
     }

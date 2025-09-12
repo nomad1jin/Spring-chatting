@@ -4,13 +4,11 @@ import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import practice.chatserver.chat.dto.ChatReqDTO;
 import practice.chatserver.chat.dto.ChatResDTO;
 
 import practice.chatserver.chat.service.ChatRoomService;
-import practice.chatserver.chat.service.ChatService;
 import practice.chatserver.global.apiPayload.CustomResponse;
 import practice.chatserver.global.apiPayload.code.SuccessCode;
 import practice.chatserver.global.jwt.CustomUserDetails;
@@ -23,7 +21,6 @@ import java.util.List;
 @RequestMapping("/chat")
 public class ChatController {
 
-    private final ChatService chatService;
     private final ChatRoomService chatRoomService;
 
     @Operation(summary = "채팅방", description = "채팅방 생성하기 ")

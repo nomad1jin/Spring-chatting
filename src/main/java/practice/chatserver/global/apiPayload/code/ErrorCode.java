@@ -36,7 +36,7 @@ public enum ErrorCode implements BaseCode {
 
     MEMBER_NOTFOUND(HttpStatus.NOT_FOUND, "MEMBER_NOTFOUND", "회원이 없습니다."),
     ROOM_NOTFOUND(HttpStatus.NOT_FOUND, "ROOM_NOTFOUND", "채팅방이 없습니다."),
-    PARTICIPANT_NOTFOUND(HttpStatus.NOT_FOUND, "PARTICIPANT_NOTFOUND", "참여자가 없습니다."),
+    PARTICIPANT_NOT_FOUND(HttpStatus.NOT_FOUND, "PARTICIPANT_NOTFOUND", "채팅 참여자가 없습니다."),
 
     ROOM_NO_AUTH(HttpStatus.UNAUTHORIZED, "ROOM_403" ,"해당 채팅방에 권한이 없습니다."),
 

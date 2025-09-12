@@ -3,7 +3,6 @@ package practice.chatserver.chat.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import practice.chatserver.chat.domain.ChatMessage;
 import practice.chatserver.chat.domain.ChatParticipant;
 import practice.chatserver.chat.domain.ChatRoom;
 import practice.chatserver.chat.repository.ChatParticipantRepository;
@@ -13,7 +12,6 @@ import practice.chatserver.member.entity.Member;
 import practice.chatserver.member.service.AuthCommandService;
 
 import java.util.List;
-import java.util.Optional;
 
 @Slf4j
 @Service
@@ -39,12 +37,12 @@ public class ChatParticipantService {
                 .map(ChatParticipant::getMember)
                 .filter(member -> !member.getId().equals(loginMember.getId()))
                 .findFirst()
-                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOTFOUND));
+                .orElseThrow(() -> new CustomException(ErrorCode.PARTICIPANT_NOT_FOUND));
     }
 
-    public ChatParticipant findByMemberId(Long memberId) {
-        ChatParticipant participant = chatParticipantRepository.findById(memberId)
-                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOTFOUND));
+    public ChatParticipant findByMemberIdAndChatRoomId(Long memberId, Long roomId) {
+        ChatParticipant participant = chatParticipantRepository.findByMemberIdAndChatRoomId(memberId, roomId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PARTICIPANT_NOT_FOUND));
         return participant;
     }
 

@@ -3,16 +3,12 @@ package practice.chatserver.chat.stomp;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
-import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.stereotype.Controller;
-import practice.chatserver.chat.domain.ChatMessage;
 import practice.chatserver.chat.dto.ChatReqDTO;
-import practice.chatserver.chat.dto.ChatResDTO;
 import practice.chatserver.chat.service.ChatMessageService;
-import practice.chatserver.chat.service.ChatService;
 
 @Slf4j
 @Controller
