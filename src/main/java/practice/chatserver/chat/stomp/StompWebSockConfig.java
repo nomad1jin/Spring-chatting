@@ -20,7 +20,7 @@ public class StompWebSockConfig implements WebSocketMessageBrokerConfigurer {
         registry.addEndpoint("/websocket")
                 .setAllowedOriginPatterns("*")
                 .withSockJS();
-        registry.addEndpoint("/ws") //사이트 테스트용
+        registry.addEndpoint("/ws")     //사이트 테스트용
                 .setAllowedOriginPatterns("*");
     }
 

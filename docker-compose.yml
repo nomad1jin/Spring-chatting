@@ -1,0 +1,41 @@
+services:
+  app:
+    build: .
+    image: agigora/chat
+    container_name: chat-app
+    env_file:
+      - .env.dev
+    ports:
+      - "8081:8080"
+    depends_on:
+      - mysql
+      - redis
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:8.0
+    container_name: chat-mysql
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_general_ci
+    env_file:
+      - .env.dev
+    ports:
+      - "3307:3306"   # 로컬에서 직접 접속할 때만 필요
+    volumes:
+      - mysql_data:/var/lib/mysql
+    restart: unless-stopped
+
+  redis:
+    image: redis:7
+    container_name: chat-redis
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}"]
+    env_file:
+      - .env.dev
+    ports:
+      - "6380:6379"   # 로컬 테스트할 때만 필요
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+  redis_data:

@@ -4,7 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import practice.chatserver.chat.domain.ChatMessage;
 
 @Data
 public class ChatResDTO {
@@ -21,7 +20,7 @@ public class ChatResDTO {
     public static class ChatRoomCardDTO {
         Long roomId;
         String roomName;
-        String nickName;
+        String userName;
         String message;
         Long unreadCount;
     }
@@ -29,10 +28,13 @@ public class ChatResDTO {
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
+    @Builder
     public static class ChatMessageResDTO {
-        private Long roomId;
+        private Long messageId;
+        private Long senderId;  //프론트는 내 로그인id랑 senderId랑 비교해서 내 메시지, 상대 메시지 구분
         private String senderName;
         private String message;
+        private boolean isRead;
     }
 
     @Data
@@ -47,9 +49,4 @@ public class ChatResDTO {
         private String message;
     }
 
-    @Data
-    public static class ChatHistoryResDTO {
-        private String senderName;
-        private String message;
-    }
 }

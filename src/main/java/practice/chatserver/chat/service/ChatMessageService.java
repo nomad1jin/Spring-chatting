@@ -6,13 +6,16 @@ import practice.chatserver.chat.domain.ChatMessage;
 import practice.chatserver.chat.domain.ChatParticipant;
 import practice.chatserver.chat.domain.ChatRoom;
 import practice.chatserver.chat.dto.ChatReqDTO;
+import practice.chatserver.chat.dto.ChatResDTO;
 import practice.chatserver.chat.repository.ChatMessageRepository;
+import practice.chatserver.chat.repository.ChatParticipantRepository;
 import practice.chatserver.chat.repository.ChatRoomRepository;
 import practice.chatserver.global.apiPayload.code.CustomException;
 import practice.chatserver.global.apiPayload.code.ErrorCode;
 import practice.chatserver.member.entity.Member;
 import practice.chatserver.member.service.AuthCommandService;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -23,6 +26,7 @@ public class ChatMessageService {
     private final AuthCommandService authCommandService;
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomRepository chatRoomRepository;
+    private final ChatParticipantRepository chatParticipantRepository;
 
     public ChatMessage saveMessage(ChatReqDTO.ChatMessageReqDTO chatMessageReqDTO) {
         //채팅방 조회
@@ -55,6 +59,25 @@ public class ChatMessageService {
         return chatMessageRepository.countByChatRoomAndMemberNotAndIsReadFalse(room, member);
     }
 
+    public List<ChatResDTO.ChatMessageResDTO> getChatMessages(Long roomId, Long memberId) {
+        // 로그인된 사용자가 참여자가 맞는지 확인
+        ChatParticipant participants = chatParticipantRepository.findByMemberIdAndChatRoomId(memberId, roomId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PARTICIPANT_NO_AUTH));
+        List<ChatMessage> chatMessages = chatMessageRepository.findByChatRoomIdOrderByCreatedTimeAsc(roomId);
+        List<ChatResDTO.ChatMessageResDTO> Dtos = new ArrayList<>();
+        for (ChatMessage c : chatMessages) {
+            ChatResDTO.ChatMessageResDTO dto = ChatResDTO.ChatMessageResDTO.builder()
+                    .messageId(c.getId())
+                    .senderId(c.getMember().getId())      //메세지에서 id를 꺼내야 메세지 보낸 사람
+                    .senderName(c.getMember().getUsername())
+                    .message(c.getChatMessage())
+                    .isRead(c.isRead())
+                    .build();
+            Dtos.add(dto);
+        }
+        return Dtos;
+    }
+
     // 읽음 여부 바꿈
     public void messageRead(Long roomId, Long memberId){
         ChatRoom chatRoom = chatRoomRepository.findById(roomId)
@@ -64,7 +87,6 @@ public class ChatMessageService {
         markAsRead(chatRoom, member);
     }
 
-    // 읽음 여부 바꿈
     // 채팅방에 속해있으면서 memberNot에 reader(나)을 넣으면 내가 아닌 사람이 읽지않은 경우를 가져옴
     public void markAsRead(ChatRoom chatRoom, Member member) {
         List<ChatMessage> unreadMessages =

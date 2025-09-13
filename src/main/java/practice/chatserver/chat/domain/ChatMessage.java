@@ -5,9 +5,13 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
+import org.springframework.data.annotation.CreatedDate;
 import practice.chatserver.member.entity.Member;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -37,6 +41,10 @@ public class ChatMessage {
     @JoinColumn(name = "room_id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     private ChatRoom chatRoom;
+
+    @CreatedDate
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdTime;
 
     public void markAsRead(){
         this.isRead = true;

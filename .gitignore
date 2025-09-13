@@ -17,6 +17,9 @@ bin/
 !**/src/main/**/bin/
 !**/src/test/**/bin/
 
+
+.env.dev
+.env
 ### IntelliJ IDEA ###
 .idea
 *.iws
@@ -28,6 +31,7 @@ out/
 
 *.yaml
 application.yaml
+application-dev.yaml
 
 ### NetBeans ###
 /nbproject/private/

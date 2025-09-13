@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import practice.chatserver.chat.dto.ChatReqDTO;
 import practice.chatserver.chat.dto.ChatResDTO;
 
+import practice.chatserver.chat.service.ChatMessageService;
 import practice.chatserver.chat.service.ChatRoomService;
 import practice.chatserver.global.apiPayload.CustomResponse;
 import practice.chatserver.global.apiPayload.code.SuccessCode;
@@ -22,6 +23,7 @@ import java.util.List;
 public class ChatController {
 
     private final ChatRoomService chatRoomService;
+    private final ChatMessageService chatMessageService;
 
     @Operation(summary = "채팅방", description = "채팅방 생성하기 ")
     @PostMapping("/room/create")
@@ -45,13 +47,14 @@ public class ChatController {
         List<ChatResDTO.ChatRoomCardDTO> chatRooms = chatRoomService.getChatRoomCards(userDetails.getId());
         return CustomResponse.onSuccess(SuccessCode.OK, chatRooms);
     }
-//
-//    @Operation(summary = "이전 메시지 조회", description = "이전 메시지 조회하기")
-//    @GetMapping("/history/{roomId}")
-//    public ResponseEntity<?> getChatHistory(@PathVariable Long roomId) {
-//        List<ChatResDTO.ChatHistoryListResDTO> chatMessageList = chatService.getChatHistory(roomId);
-//        return ResponseEntity.ok(chatMessageList);
-//    }
+
+    @Operation(summary = "이전 메시지 조회", description = "이전 메시지 조회하기")
+    @GetMapping("/history/{roomId}")
+    public CustomResponse<List<ChatResDTO.ChatMessageResDTO>> getChatHistory(@PathVariable Long roomId,
+                                                                       @AuthenticationPrincipal CustomUserDetails userDetails) {
+        List<ChatResDTO.ChatMessageResDTO> chatMessageList = chatMessageService.getChatMessages(roomId, userDetails.getId());
+        return CustomResponse.onSuccess(SuccessCode.OK, chatMessageList);
+    }
 
 //    @PostMapping("/room/{roomId}/read")
 //    public ResponseEntity<?> readMessage(@PathVariable Long roomId) {
