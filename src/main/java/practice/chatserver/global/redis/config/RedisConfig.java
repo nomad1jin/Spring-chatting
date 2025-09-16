@@ -9,12 +9,18 @@ import org.springframework.data.redis.connection.RedisPassword;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.listener.PatternTopic;
+import org.springframework.data.redis.listener.RedisMessageListenerContainer;
+import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
 import org.springframework.data.redis.repository.configuration.EnableRedisRepositories;
+import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import practice.chatserver.global.redis.service.RedisPubSubService;
 
 @Configuration
 @EnableRedisRepositories(
-        basePackages = "practice.global.redis.repository"
+        basePackages = "practice.chatserver.global.redis.repository"
 )
 @RequiredArgsConstructor
 public class RedisConfig {
@@ -30,13 +36,9 @@ public class RedisConfig {
 
     @Bean
     public RedisConnectionFactory redisConnectionFactory() {
-        RedisStandaloneConfiguration config = new RedisStandaloneConfiguration();
-        config.setHostName(host);
-        config.setPort(port);
-        if (password != null && !password.isBlank()) {
-            config.setPassword(RedisPassword.of(password));
-        }
-        return new LettuceConnectionFactory(config);
+        RedisStandaloneConfiguration factory = new RedisStandaloneConfiguration(host, port);
+        factory.setPassword(password);
+        return new LettuceConnectionFactory(factory);
     }
 
     @Bean
@@ -45,10 +47,39 @@ public class RedisConfig {
         RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
         redisTemplate.setConnectionFactory(redisConnectionFactory);
 
-        // key, value에 대한 직렬화 방법 설정
+        // JSON 직렬화 설정 (객체->json)
+        GenericJackson2JsonRedisSerializer serializer = new GenericJackson2JsonRedisSerializer();
+
         redisTemplate.setKeySerializer(new StringRedisSerializer());
-        redisTemplate.setValueSerializer(new StringRedisSerializer());
+        redisTemplate.setValueSerializer(serializer);
+        redisTemplate.setHashKeySerializer(new StringRedisSerializer());
+        redisTemplate.setHashValueSerializer(serializer);
 
         return redisTemplate;
+    }
+
+    // Chat PubSub 전용 StringRedisTemplate
+    @Bean
+    public StringRedisTemplate stringRedisTemplate(RedisConnectionFactory redisConnectionFactory) {
+        return new StringRedisTemplate(redisConnectionFactory);
+    }
+
+    // redis 연결 설정 - RedisConnectionFactory
+    // MessageListenerAdapter 주입 - 채널에 publish되는 메세지를 자동으로 받아옴
+    @Bean
+    public RedisMessageListenerContainer redisMessageListenerContainer(
+            RedisConnectionFactory redisConnectionFactory,
+            MessageListenerAdapter listenerAdapter) {
+        RedisMessageListenerContainer container = new RedisMessageListenerContainer();
+        container.setConnectionFactory(redisConnectionFactory);
+        container.addMessageListener(listenerAdapter, new PatternTopic("chat"));
+        return container;
+    }
+
+    // MessageListenerAdapter 특정 채널 구독 - 수신한 메시지를 지정한 객체의 특정 메서드로 넘겨줌
+    // 여기선 r
+    @Bean
+    public MessageListenerAdapter listenerAdapter(RedisPubSubService redisPubSubService) {
+        return new MessageListenerAdapter(redisPubSubService, "onMessage");
     }
 }

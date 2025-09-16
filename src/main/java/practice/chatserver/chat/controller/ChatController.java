@@ -48,18 +48,12 @@ public class ChatController {
         return CustomResponse.onSuccess(SuccessCode.OK, chatRooms);
     }
 
-    @Operation(summary = "이전 메시지 조회", description = "이전 메시지 조회하기")
+    @Operation(summary = "채팅방 내 메시지 전체 조회", description = "채팅방 내 메시지 전체 조회하기")
     @GetMapping("/history/{roomId}")
     public CustomResponse<List<ChatResDTO.ChatMessageResDTO>> getChatHistory(@PathVariable Long roomId,
                                                                        @AuthenticationPrincipal CustomUserDetails userDetails) {
         List<ChatResDTO.ChatMessageResDTO> chatMessageList = chatMessageService.getChatMessages(roomId, userDetails.getId());
         return CustomResponse.onSuccess(SuccessCode.OK, chatMessageList);
     }
-
-//    @PostMapping("/room/{roomId}/read")
-//    public ResponseEntity<?> readMessage(@PathVariable Long roomId) {
-//        chatService.readMessage(roomId);
-//        return ResponseEntity.ok().build();
-//    }
 
 }

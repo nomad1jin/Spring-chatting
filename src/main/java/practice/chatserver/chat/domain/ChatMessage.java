@@ -12,6 +12,8 @@ import org.springframework.data.annotation.CreatedDate;
 import practice.chatserver.member.entity.Member;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -41,6 +43,9 @@ public class ChatMessage {
     @JoinColumn(name = "room_id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     private ChatRoom chatRoom;
+
+    @OneToMany(mappedBy = "chatMessage", cascade = CascadeType.ALL)
+    private List<ChatReadStatus> chatReadStatuses = new ArrayList<>();
 
     @CreatedDate
     @Column(name = "created_at", updatable = false)

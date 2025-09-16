@@ -47,4 +47,7 @@ public class ChatParticipantService {
     }
 
 
+    public List<ChatParticipant> findByChatRoomId(Long roomId) {
+        return chatParticipantRepository.findByChatRoomId(roomId);
+    }
 }

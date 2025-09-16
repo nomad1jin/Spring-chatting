@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import practice.chatserver.chat.domain.ChatParticipant;
+import practice.chatserver.chat.domain.ChatReadStatus;
 import practice.chatserver.member.enums.Gender;
 import practice.chatserver.member.enums.Type;
 
@@ -55,6 +56,9 @@ public class Member {
     @Column(nullable = false)
     private String email;
 
-    @OneToMany(mappedBy = "member")
+    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ChatParticipant> participants= new ArrayList<>();
+
+    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ChatReadStatus> chatReadStatuses = new ArrayList<>();
 }

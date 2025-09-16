@@ -42,12 +42,14 @@ public class ChatEntryService {
             String[] parts = destination.split("/");
             Long roomId = Long.parseLong(parts[2]);
             String username = (String) accessor.getSessionAttributes().get("username");
+            Long memberId = (Long) accessor.getSessionAttributes().get("memberId");
 
             if (!chatParticipantService.isRoomParticipant(username, roomId)) {
                 log.error("[ 방 {} 참여 권한 없음 - 사용자: {} ]", roomId, username);
                 throw new CustomException(ErrorCode.ROOM_NO_AUTH);
             }
             log.info("[ 방 {} 구독 성공 - 사용자: {} ]", roomId, username);
+            chatMessageService.markAsReadCount(roomId, memberId);
         }
     }
 

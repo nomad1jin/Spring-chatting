@@ -10,7 +10,7 @@ import practice.chatserver.member.repository.MemberRepository;
 import practice.chatserver.global.apiPayload.code.CustomException;
 import practice.chatserver.global.apiPayload.code.ErrorCode;
 import practice.chatserver.global.jwt.JwtUtil;
-import practice.chatserver.global.redis.service.RedisService;
+import practice.chatserver.global.redis.service.RedisAuthService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -24,7 +24,7 @@ public class AuthCommandServiceImpl implements AuthCommandService {
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthConverter authConverter;
-    private final RedisService redisService;
+    private final RedisAuthService redisAuthService;
     private final JwtUtil jwtUtil;
 
     @Override
@@ -82,16 +82,16 @@ public class AuthCommandServiceImpl implements AuthCommandService {
         }
 
         // 2. 블랙리스트 처리된 액세스 토큰인지 검증
-        if (redisService.isBlacklisted(accessToken)) {
+        if (redisAuthService.isBlacklisted(accessToken)) {
             throw new CustomException(ErrorCode.BLACKLISTED);
         }
 
         // 3. 액세스 토큰 블랙리스트 처리
-        redisService.addBlacklist(accessToken);
+        redisAuthService.addBlacklist(accessToken);
 
         // 4. 리프레시 토큰 삭제
         Long id = jwtUtil.getId(accessToken);
-        redisService.deleteRefreshToken(id);
+        redisAuthService.deleteRefreshToken(id);
 
         log.info("[ 로그아웃 완료 ]");
     }

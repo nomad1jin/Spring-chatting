@@ -19,7 +19,7 @@ import java.util.Date;
 @Service
 @Transactional
 @RequiredArgsConstructor
-public class RedisService {
+public class RedisAuthService {
 
     private final JwtUtil jwtUtil;
     private final RedisRepository redisRepository;

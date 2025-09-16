@@ -20,7 +20,6 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthCommandService authCommandService;
-    private final AuthConverter authConverter;
 
     @Operation(summary = "회원가입", description = "회원가입합니다.")
     @PostMapping("/signup")
