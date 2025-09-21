@@ -31,11 +31,12 @@ public class RedisPubSubService implements MessageListener {
         log.info("Redis 메시지 수신 - 채널: {}, 메시지: {}", channel, payload);
 
         try {
-            // 구독하고 있는 입장은 역직렬화해야하므로 readValue
-            String actualPayload = objectMapper.readValue(payload, String.class);
-            log.info("이스케이프 해제 후: {}", actualPayload);
 
-            ChatReqDTO.ChatMessageReqDTO messageReqDTO = objectMapper.readValue(actualPayload, ChatReqDTO.ChatMessageReqDTO.class);
+//            String actualPayload = objectMapper.readValue(payload, String.class);
+//            log.info("이스케이프 해제 후: {}", actualPayload);
+
+            // 구독하고 있는 입장은 역직렬화해야하므로 readValue
+            ChatReqDTO.ChatMessageReqDTO messageReqDTO = objectMapper.readValue(payload, ChatReqDTO.ChatMessageReqDTO.class);
             log.info("메시지 역직렬화 성공 - 방: {}, 발신자: {}, 내용: {}",
                     messageReqDTO.getRoomId(), messageReqDTO.getMemberId(), messageReqDTO.getMessage());
 

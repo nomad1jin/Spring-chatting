@@ -38,9 +38,9 @@ public class StompController {
             throws JsonProcessingException {
         log.info("[ sendMessage2 : {} ]", chatMessageReqDTO.getMessage());
         chatMessageService.saveMessage(chatMessageReqDTO);
-//        messageTemplate.convertAndSend("/topic/" + roomId, chatMessageReqDTO.getMessage());
-        String message = objectMapper.writeValueAsString(chatMessageReqDTO);
-        redisPubSubService.publish("chat", message);
+
+//        String message = objectMapper.writeValueAsString(chatMessageReqDTO);
+        redisPubSubService.publish("chat", chatMessageReqDTO);
         // 레디스 chat 채널로 해당 메세지 발행하면
         // 메세지리스너어댑터가 메세지를 수신하여 펍섭서비스의 onMessage()을 호출
     }
