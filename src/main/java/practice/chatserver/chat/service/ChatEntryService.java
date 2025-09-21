@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import practice.chatserver.global.apiPayload.code.CustomException;
 import practice.chatserver.global.apiPayload.code.ErrorCode;
 import practice.chatserver.global.jwt.JwtUtil;
+import practice.chatserver.member.entity.Member;
 import practice.chatserver.member.service.AuthCommandService;
 
 @Slf4j
@@ -25,10 +26,13 @@ public class ChatEntryService {
         // CONNECT 시점에는 사용자 인증만 확인
         String accessToken = extractAccessToken(accessor);
         String username = jwtUtil.getUsername(accessToken);
+
         log.info("[ STOMP CONNECT - 사용자: {} ]", username);
 
         // 사용자 정보를 세션에 저장 (웹소켓 세션 메모리에만 존재해서 서버 재시작하면 날아감)
         accessor.getSessionAttributes().put("username", username);
+        Member member = authCommandService.findByUsername(username);
+        accessor.getSessionAttributes().put("memberId", member.getId());
         accessor.setUser(() -> username);  // Principal 생성
     }
 

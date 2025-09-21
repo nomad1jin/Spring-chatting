@@ -29,7 +29,7 @@ public class ChatMessage {
     private String chatMessage;
 
     //    @Column(nullable = false)
-    private boolean isRead;
+//    private boolean isRead;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "participant_id")
@@ -51,8 +51,6 @@ public class ChatMessage {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdTime;
 
-    public void markAsRead(){
-        this.isRead = true;
-    }
+
 
 }

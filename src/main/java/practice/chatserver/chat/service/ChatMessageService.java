@@ -69,7 +69,7 @@ public class ChatMessageService {
     }
 
     public Long getUnreadCount(ChatRoom room, Member member) {
-        return chatMessageRepository.countByChatRoomAndMemberNotAndIsReadFalse(room, member);
+        return chatReadStatusRepository.countByChatRoomAndMemberAndIsReadFalse(room, member);
     }
 
     public List<ChatResDTO.ChatMessageResDTO> getChatMessages(Long roomId, Long memberId) {
@@ -78,43 +78,62 @@ public class ChatMessageService {
         List<ChatMessage> chatMessages = chatMessageRepository.findByChatRoomIdOrderByCreatedTimeAsc(roomId);
         List<ChatResDTO.ChatMessageResDTO> Dtos = new ArrayList<>();
         for (ChatMessage c : chatMessages) {
+
+            boolean isRead;
+
+            if (c.getMember().getId().equals(memberId)) {
+                // 내가 보낸 메시지 → 상대방이 읽었는지 확인
+                isRead = c.getChatReadStatuses().stream()
+                        .filter(readStatus -> !readStatus.getMember().getId().equals(memberId)) // 나 제외
+                        .allMatch(ChatReadStatus::isRead); // 모든 상대방이 읽었는지
+            } else {
+                // 상대방이 보낸 메시지 → 내가 읽었는지 확인
+                isRead = c.getChatReadStatuses().stream()
+                        .filter(readStatus -> readStatus.getMember().getId().equals(memberId))
+                        .findFirst()
+                        .map(ChatReadStatus::isRead)
+                        .orElse(false);
+            }
+
             ChatResDTO.ChatMessageResDTO dto = ChatResDTO.ChatMessageResDTO.builder()
                     .messageId(c.getId())
                     .senderId(c.getMember().getId())      //메세지에서 id를 꺼내야 메세지 보낸 사람
                     .senderName(c.getMember().getUsername())
                     .message(c.getChatMessage())
-                    .isRead(c.isRead())
+                    .isRead(isRead)
                     .build();
             Dtos.add(dto);
         }
         return Dtos;
     }
 
-    // 읽음 여부 바꿈
-    public void messageRead(Long roomId, Long memberId){
-        ChatRoom chatRoom = chatRoomRepository.findById(roomId)
-                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOTFOUND));
-
-        Member member = authCommandService.findById(memberId);
-        markAsRead(chatRoom, member);
-    }
-
-    // 채팅방에 속해있으면서 memberNot에 reader(나)을 넣으면 내가 아닌 사람이 읽지않은 경우를 가져옴
-    // select 쿼리 1번 - 모든 안 읽은 메세지 조회
-    // update 쿼리 100번 - 메세지마다 개별 update
-    public void markAsRead(ChatRoom chatRoom, Member member) {
-        List<ChatMessage> unreadMessages =
-                chatMessageRepository.findByChatRoomAndMemberNotAndIsReadFalse(chatRoom, member);
-        for (ChatMessage chatMessage : unreadMessages) {
-            chatMessage.markAsRead();
-        }
-    }
+//    // 읽음 여부 바꿈
+//    public void messageRead(Long roomId, Long memberId){
+//        ChatRoom chatRoom = chatRoomRepository.findById(roomId)
+//                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOTFOUND));
+//
+//        Member member = authCommandService.findById(memberId);
+//        markAsRead(chatRoom, member);
+//    }
+//
+//    // 채팅방에 속해있으면서 memberNot에 reader(나)을 넣으면 내가 아닌 사람이 읽지않은 경우를 가져옴
+//    // select 쿼리 1번 - 모든 안 읽은 메세지 조회
+//    // update 쿼리 100번 - 메세지마다 개별 update
+//    public void markAsRead(ChatRoom chatRoom, Member member) {
+//        List<ChatMessage> unreadMessages =
+//                chatMessageRepository.findByChatRoomAndMemberNotAndIsReadFalse(chatRoom, member);
+//        for (ChatMessage chatMessage : unreadMessages) {
+//            chatMessage.markAsRead();
+//        }
+//    }
 
     // 위의 메서드 리팩토링 - 조회없이 update 쿼리 1번
     public int markAsReadCount(Long roomId, Long memberId) {
-        int updatedCount = chatMessageRepository.markMessagesAsRead(roomId, memberId);
+        int updatedCount = chatReadStatusRepository.markMessagesAsRead(roomId, memberId);
         log.info("[ markAsRead count ] : {}", updatedCount);
         return updatedCount;
     }
+
+
 
 }
