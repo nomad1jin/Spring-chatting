@@ -2,6 +2,10 @@ package practice.chatserver.chat.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import practice.chatserver.chat.domain.ChatMessage;
 import practice.chatserver.chat.domain.ChatParticipant;
@@ -30,6 +34,7 @@ public class ChatMessageService {
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomRepository chatRoomRepository;
     private final ChatReadStatusRepository chatReadStatusRepository;
+    private final MongoTemplate mongoTemplate;
 
     public void saveMessage(ChatReqDTO.ChatMessageReqDTO chatMessageReqDTO) {
         //채팅방 조회
@@ -37,14 +42,14 @@ public class ChatMessageService {
                 .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOTFOUND));
 
         //채팅방과 멤버 조회
-        ChatParticipant sender = chatParticipantService.findByMemberIdAndChatRoomId(
+        ChatParticipant sender = chatParticipantService.findByMemberIdAndRoomId(
                 chatMessageReqDTO.getMemberId(), chatRoom.getId());
 
         //메시지 저장
         ChatMessage chatMessage = ChatMessage.builder()
-                .chatRoom(chatRoom)
-                .participant(sender)
-                .member(sender.getMember())
+                .roomId(chatRoom.getId())
+                .participantId(sender.getId())
+                .memberId(sender.getMemberId())
                 .chatMessage(chatMessageReqDTO.getMessage())
                 .build();
         ChatMessage savedMessage = chatMessageRepository.save(chatMessage);
@@ -53,10 +58,10 @@ public class ChatMessageService {
         List<ChatParticipant> participants = chatParticipantService.findByChatRoomId(chatRoom.getId());
         for (ChatParticipant participant : participants) {
             ChatReadStatus readStatus = ChatReadStatus.builder()
-                    .chatRoom(chatRoom)
-                    .chatMessage(savedMessage)
-                    .member(participant.getMember())
-                    .isRead(participant.getMember().equals(sender.getMember()))
+                    .roomId(chatRoom.getId())
+                    .messageId(savedMessage.getId())
+                    .memberId(participant.getMemberId())
+                    .isRead(participant.getMemberId().equals(sender.getMemberId()))
                     .build();
             chatReadStatusRepository.save(readStatus);
         }
@@ -64,41 +69,43 @@ public class ChatMessageService {
     }
 
     public ChatMessage getLatestMessage(ChatRoom room) {
-        return chatMessageRepository.findTop1ByChatRoomOrderByIdDesc(room)
+        return chatMessageRepository.findFirstByRoomIdOrderByCreatedTimeDesc(room.getId())
                 .orElseThrow(() -> new CustomException(ErrorCode.MESSAGE_NOT_FOUND));
     }
 
     public Long getUnreadCount(ChatRoom room, Member member) {
-        return chatReadStatusRepository.countByChatRoomAndMemberAndIsReadFalse(room, member);
+        return chatReadStatusRepository.countByRoomIdAndMemberIdAndIsReadFalse(room.getId(), member.getId());
     }
 
-    public List<ChatResDTO.ChatMessageResDTO> getChatMessages(Long roomId, Long memberId) {
+    public List<ChatResDTO.ChatMessageResDTO> getChatMessages(String roomId, Long memberId) {
         // 로그인된 사용자가 참여자가 맞는지 확인
-        ChatParticipant participants = chatParticipantService.findByMemberIdAndChatRoomId(memberId, roomId);
-        List<ChatMessage> chatMessages = chatMessageRepository.findByChatRoomIdOrderByCreatedTimeAsc(roomId);
+        chatParticipantService.findByMemberIdAndRoomId(memberId, roomId);
+        List<ChatMessage> chatMessages = chatMessageRepository.findByRoomIdOrderByCreatedTimeAsc(roomId);
         List<ChatResDTO.ChatMessageResDTO> Dtos = new ArrayList<>();
-        for (ChatMessage c : chatMessages) {
 
+        for (ChatMessage c : chatMessages) {
             boolean isRead;
 
-            if (c.getMember().getId().equals(memberId)) {
+            if (c.getMemberId().equals(memberId)) {
                 // 내가 보낸 메시지 → 상대방이 읽었는지 확인
-                isRead = c.getChatReadStatuses().stream()
-                        .filter(readStatus -> !readStatus.getMember().getId().equals(memberId)) // 나 제외
-                        .allMatch(ChatReadStatus::isRead); // 모든 상대방이 읽었는지
+                Query query = new Query(Criteria.where("messageId").is(c.getId())
+                        .and("memberId").ne(memberId));
+                List<ChatReadStatus> otherReadStatuses = mongoTemplate.find(query, ChatReadStatus.class);
+                isRead = otherReadStatuses.stream().allMatch(ChatReadStatus::isRead);
             } else {
                 // 상대방이 보낸 메시지 → 내가 읽었는지 확인
-                isRead = c.getChatReadStatuses().stream()
-                        .filter(readStatus -> readStatus.getMember().getId().equals(memberId))
-                        .findFirst()
-                        .map(ChatReadStatus::isRead)
-                        .orElse(false);
+                Query query = new Query(Criteria.where("messageId").is(c.getId())
+                        .and("memberId").is(memberId));
+                ChatReadStatus myReadStatus = mongoTemplate.findOne(query, ChatReadStatus.class);
+                isRead = myReadStatus.isRead();
             }
+
+            Member sender = authCommandService.findById(c.getMemberId());
 
             ChatResDTO.ChatMessageResDTO dto = ChatResDTO.ChatMessageResDTO.builder()
                     .messageId(c.getId())
-                    .senderId(c.getMember().getId())      //메세지에서 id를 꺼내야 메세지 보낸 사람
-                    .senderName(c.getMember().getUsername())
+                    .senderId(c.getMemberId())      //메세지에서 id를 꺼내야 메세지 보낸 사람
+                    .senderName(sender.getUsername())
                     .message(c.getChatMessage())
                     .isRead(isRead)
                     .build();
@@ -107,33 +114,16 @@ public class ChatMessageService {
         return Dtos;
     }
 
-//    // 읽음 여부 바꿈
-//    public void messageRead(Long roomId, Long memberId){
-//        ChatRoom chatRoom = chatRoomRepository.findById(roomId)
-//                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOTFOUND));
-//
-//        Member member = authCommandService.findById(memberId);
-//        markAsRead(chatRoom, member);
-//    }
-//
-//    // 채팅방에 속해있으면서 memberNot에 reader(나)을 넣으면 내가 아닌 사람이 읽지않은 경우를 가져옴
-//    // select 쿼리 1번 - 모든 안 읽은 메세지 조회
-//    // update 쿼리 100번 - 메세지마다 개별 update
-//    public void markAsRead(ChatRoom chatRoom, Member member) {
-//        List<ChatMessage> unreadMessages =
-//                chatMessageRepository.findByChatRoomAndMemberNotAndIsReadFalse(chatRoom, member);
-//        for (ChatMessage chatMessage : unreadMessages) {
-//            chatMessage.markAsRead();
-//        }
-//    }
+    public int markAsReadCount(String roomId, Long memberId) {
+        //mongoTemplate
+        Query query = new Query(Criteria.where("roomId").is(roomId)
+                .and("memberId").is(memberId)
+                .and("isRead").is(false));
+        Update update = new Update().set("isRead", true);
 
-    // 위의 메서드 리팩토링 - 조회없이 update 쿼리 1번
-    public int markAsReadCount(Long roomId, Long memberId) {
-        int updatedCount = chatReadStatusRepository.markMessagesAsRead(roomId, memberId);
+        long updatedCount = mongoTemplate.updateMulti(query, update, ChatReadStatus.class).getModifiedCount();
         log.info("[ markAsRead count ] : {}", updatedCount);
-        return updatedCount;
+        return (int) updatedCount;
     }
-
-
 
 }

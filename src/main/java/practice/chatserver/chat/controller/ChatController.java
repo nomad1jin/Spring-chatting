@@ -35,7 +35,7 @@ public class ChatController {
 
     @Operation(summary = "채팅방 카드 단일 조회", description = "채팅방 카드 단일 조회하기 ")
     @GetMapping("/room/card")
-    public CustomResponse<ChatResDTO.ChatRoomCardDTO> getRoomCard(@RequestParam Long roomId,
+    public CustomResponse<ChatResDTO.ChatRoomCardDTO> getRoomCard(@RequestParam String roomId,
                                                                   @AuthenticationPrincipal CustomUserDetails userDetails) {
         ChatResDTO.ChatRoomCardDTO chatRoom = chatRoomService.getChatRoomCard(roomId, userDetails.getId());
         return CustomResponse.onSuccess(SuccessCode.OK, chatRoom);
@@ -50,7 +50,7 @@ public class ChatController {
 
     @Operation(summary = "채팅방 내 메시지 전체 조회", description = "채팅방 내 메시지 전체 조회하기")
     @GetMapping("/history/{roomId}")
-    public CustomResponse<List<ChatResDTO.ChatMessageResDTO>> getChatHistory(@PathVariable Long roomId,
+    public CustomResponse<List<ChatResDTO.ChatMessageResDTO>> getChatHistory(@PathVariable String roomId,
                                                                        @AuthenticationPrincipal CustomUserDetails userDetails) {
         List<ChatResDTO.ChatMessageResDTO> chatMessageList = chatMessageService.getChatMessages(roomId, userDetails.getId());
         return CustomResponse.onSuccess(SuccessCode.OK, chatMessageList);

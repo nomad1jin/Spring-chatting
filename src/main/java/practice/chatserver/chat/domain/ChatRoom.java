@@ -5,33 +5,20 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@Entity
+@Document(collection = "chat_rooms")
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class ChatRoom {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(nullable = false)
+    @Id
+    private String id;
     private String roomName;
-
-    @Enumerated(EnumType.STRING)
     private RoomStatus roomStatus;
-
-    @OneToMany(mappedBy = "chatRoom", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ChatParticipant> participants = new ArrayList<>();
-
-    @OneToMany(mappedBy = "chatRoom", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ChatMessage> chatMessages = new ArrayList<>();
-
-    @OneToMany(mappedBy = "chatRoom", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ChatReadStatus> chatReadStatuses = new ArrayList<>();
-
 }

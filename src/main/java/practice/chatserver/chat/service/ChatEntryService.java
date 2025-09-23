@@ -40,11 +40,15 @@ public class ChatEntryService {
         log.info("[ STOMP SUBSCRIBE - 방 참여 권한 검증 ]");
         String destination = accessor.getDestination();
 
+        log.info("[ DEBUG ] destination: '{}'", destination);  // 실제 destination 값 확인
+        log.info("[ DEBUG ] destination startsWith /topic/: {}",
+                destination != null && destination.startsWith("/topic/"));
+
         if (destination != null && destination.startsWith("/topic/")) {
 
             // destination에서 roomId 추출: /topic/{roomId}
             String[] parts = destination.split("/");
-            Long roomId = Long.parseLong(parts[2]);
+            String roomId = parts[2];
             String username = (String) accessor.getSessionAttributes().get("username");
             Long memberId = (Long) accessor.getSessionAttributes().get("memberId");
 

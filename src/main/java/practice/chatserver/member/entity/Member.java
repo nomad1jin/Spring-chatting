@@ -55,10 +55,4 @@ public class Member {
 
     @Column(nullable = false)
     private String email;
-
-    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ChatParticipant> participants= new ArrayList<>();
-
-    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ChatReadStatus> chatReadStatuses = new ArrayList<>();
 }

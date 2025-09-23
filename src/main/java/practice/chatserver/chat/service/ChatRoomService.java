@@ -3,6 +3,9 @@ package practice.chatserver.chat.service;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import practice.chatserver.chat.domain.ChatMessage;
@@ -29,6 +32,7 @@ public class ChatRoomService {
     private final ChatMessageService chatMessageService;
     private final ChatParticipantService chatParticipantService;
     private final AuthCommandService authCommandService;
+    private final MongoTemplate mongoTemplate;
 
     @Transactional
     public ChatResDTO.ChatRoomCreatedDTO createRoom(Long initiatorId, Long targetId, String roomName) {
@@ -46,8 +50,8 @@ public class ChatRoomService {
 
         // 두 참여자 모두 추가
         List<ChatParticipant> participants = Arrays.asList(
-                ChatParticipant.builder().chatRoom(chatRoom).member(initiator).build(),
-                ChatParticipant.builder().chatRoom(chatRoom).member(target).build()
+                ChatParticipant.builder().roomId(chatRoom.getId()).memberId(initiatorId).build(),
+                ChatParticipant.builder().roomId(chatRoom.getId()).memberId(targetId).build()
         );
         chatParticipantService.saveAllParticipants(participants);
 
@@ -55,14 +59,13 @@ public class ChatRoomService {
     }
 
 
-    public ChatRoom getChatRoom(Long roomId) {
-        ChatRoom chatroom = chatRoomRepository.findById(roomId)
+    public ChatRoom getChatRoom(String roomId) {
+        return chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOTFOUND));
-        return chatroom;
     }
 
     // 개별 채팅방 카드 (이름, 메세지, 미읽음 수) 조회 -> 알림 보낼때 재활용할 생각
-    public ChatResDTO.ChatRoomCardDTO getChatRoomCard(Long roomId, Long memberId) {
+    public ChatResDTO.ChatRoomCardDTO getChatRoomCard(String roomId, Long memberId) {
         ChatRoom chatRoom = getChatRoom(roomId);
 
         Member loginMember = authCommandService.findById(memberId);
@@ -81,22 +84,45 @@ public class ChatRoomService {
 
     // 채팅방 카드 리스트(이름, 메세지, 미읽음 수) 조회
     public List<ChatResDTO.ChatRoomCardDTO> getChatRoomCards(Long memberId) {
-        List<ChatRoom> rooms = chatRoomRepository.findRoomIdsByMemberId(memberId);
+//        List<ChatRoom> rooms = chatRoomRepository.findRoomIdsByMemberId(memberId);
+        // 기존 코드는 jpa가 룸과 멤버를 조인하기에 쉽게 사용할 수 있었는데, 몽고디비에선 그럴 수 없고
+        // ChatRoom에 memberId 필드를 추가하면 참여자 테이블과 데이터가 중복되고 동기화 문제가 생겨서 2번 거쳐서 조회하기로 결정
+        Query query = Query.query(Criteria.where("memberId").is(memberId));
+        List<ChatParticipant> participants = mongoTemplate.find(query, ChatParticipant.class);
 
-        return rooms.stream()
-                .map(room -> getChatRoomCard(room.getId(), memberId))  // 개별 메서드 재사용
+        return participants.stream()
+                .map(participant -> getChatRoomCard(participant.getRoomId(), memberId))
                 .toList();
     }
 
+    // 두 사용자가 모두 참여한 방 찾기
     public Optional<ChatRoom> findExistingRoom(Long initiatorId, Long targetId) {
-        return chatRoomRepository.findExistingRoom(initiatorId, targetId);
+//        return chatRoomRepository.findExistingRoom(initiatorId, targetId);
+        // 간편한 JPA 사용할 수 없고 쿼리 두개로 공통 룸을 찾는 방식
+        Query query1 = new Query(Criteria.where("memberId").is(initiatorId));
+        List<ChatParticipant> initiatorRooms = mongoTemplate.find(query1, ChatParticipant.class);
+
+        Query query2 = new Query(Criteria.where("memberId").is(targetId));
+        List<ChatParticipant> targetRooms = mongoTemplate.find(query2, ChatParticipant.class);
+
+        String commonRoomId = initiatorRooms.stream()
+                .filter(p1 -> targetRooms.stream()
+                        .anyMatch(p2 -> p1.getRoomId().equals(p2.getRoomId())))
+                .map(ChatParticipant::getRoomId)
+                .findFirst()
+                .orElse(null);
+
+        if(commonRoomId != null) {
+            return chatRoomRepository.findById(commonRoomId);
+        }
+
+        return Optional.empty();
     }
 
     public ChatRoom makeChatRoom(String roomName) {
         ChatRoom chatRoom = ChatRoom.builder()
                 .roomName(roomName)
                 .build();
-        chatRoomRepository.save(chatRoom);
-        return chatRoom;
+        return chatRoomRepository.save(chatRoom);
     }
 }

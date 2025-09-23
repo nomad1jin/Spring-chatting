@@ -1,9 +1,7 @@
 package practice.chatserver.chat.repository;
 
 
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 import practice.chatserver.chat.domain.ChatRoom;
 
@@ -11,25 +9,9 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
-    Optional<ChatRoom> findById(Long roomId);
-//    Optional<ChatRoom> findByInitiatorAndRoomId(Long initiatorId, Long roomId);
-
-    @Query("""
-    SELECT cr FROM ChatRoom cr 
-    JOIN cr.participants p1 
-    JOIN cr.participants p2 
-    WHERE p1.member.id = :memberId1 
-    AND p2.member.id = :memberId2 
-    """)
-    Optional<ChatRoom> findExistingRoom(@Param("memberId1") Long initiatorId, @Param("memberId2") Long targetId);
-
-    @Query("""
-    SELECT cr FROM ChatRoom cr 
-    JOIN cr.participants p
-    WHERE p.member.id = :memberId
-    """)
-    List<ChatRoom> findRoomIdsByMemberId(Long memberId);
+public interface ChatRoomRepository extends MongoRepository<ChatRoom, String> {
+    // findById는 기본 제공 (String ID로 자동 변경)
+    Optional<ChatRoom> findById(String id);
 }
 
 

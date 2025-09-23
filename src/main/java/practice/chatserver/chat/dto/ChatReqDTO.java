@@ -11,7 +11,7 @@ public class ChatReqDTO {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class ChatMessageReqDTO {
-        private Long roomId;
+        private String roomId;
         private Long memberId;
         private String message;
     }
@@ -26,6 +26,6 @@ public class ChatReqDTO {
 
     @Data
     public static class ChatCardReqDTO {
-        private Long roomId;
+        private String roomId;
     }
 }

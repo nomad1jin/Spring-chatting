@@ -7,32 +7,23 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
+import org.springframework.data.mongodb.core.mapping.Document;
 import practice.chatserver.member.entity.Member;
 
 import java.util.ArrayList;
 import java.util.List;
 
 
-@Entity
+@Document(collection = "chat_participants")
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class ChatParticipant {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "member_id")
-    private Member member;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "room_id")
-    @OnDelete(action = OnDeleteAction.CASCADE)
-    private ChatRoom chatRoom;
-
-    @OneToMany(mappedBy = "participant", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ChatMessage> chatMessages = new ArrayList<>();
+    @Id
+    private String id;
+    private String roomId;
+    private Long memberId;
 }
 

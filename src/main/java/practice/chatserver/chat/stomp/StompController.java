@@ -26,7 +26,7 @@ public class StompController {
     // 방법1. MessageMapping(수신)과 SendTo(발행) 한꺼번에 처리
     @MessageMapping("/room/{roomId}/sendto")
     @SendTo("/topic/{roomId}")
-    public void sendMessage1(@DestinationVariable Long roomId, ChatReqDTO.ChatMessageReqDTO chatMessageReqDTO){
+    public void sendMessage1(@DestinationVariable String roomId, ChatReqDTO.ChatMessageReqDTO chatMessageReqDTO){
         log.info("[ sendMessage1 : {} ]", chatMessageReqDTO.getMessage());
         chatMessageService.saveMessage(chatMessageReqDTO);
     }
@@ -34,7 +34,7 @@ public class StompController {
     // 방법2. MessageMapping만 활용 - 현재 이거 활용
     // app/room/1 에서 메세지 매핑
     @MessageMapping("/room/{roomId}")
-    public void sendMessage2(@DestinationVariable Long roomId, ChatReqDTO.ChatMessageReqDTO chatMessageReqDTO)
+    public void sendMessage2(@DestinationVariable String roomId, ChatReqDTO.ChatMessageReqDTO chatMessageReqDTO)
             throws JsonProcessingException {
         log.info("[ sendMessage2 : {} ]", chatMessageReqDTO.getMessage());
         chatMessageService.saveMessage(chatMessageReqDTO);

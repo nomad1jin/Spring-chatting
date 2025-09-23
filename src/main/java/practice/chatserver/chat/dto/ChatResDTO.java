@@ -11,14 +11,14 @@ public class ChatResDTO {
     @Data
     @AllArgsConstructor
     public static class ChatRoomCreatedDTO {
-        Long roomId;
+        String roomId;
         String roomName;
     }
 
     @Data
     @AllArgsConstructor
     public static class ChatRoomCardDTO {
-        Long roomId;
+        String roomId;
         String roomName;
         String userName;
         String message;
@@ -30,7 +30,7 @@ public class ChatResDTO {
     @AllArgsConstructor
     @Builder
     public static class ChatMessageResDTO {
-        private Long messageId;
+        private String messageId;
         private Long senderId;  //프론트는 내 로그인id랑 senderId랑 비교해서 내 메시지, 상대 메시지 구분
         private String senderName;
         private String message;
@@ -39,7 +39,7 @@ public class ChatResDTO {
 
     @Data
     public static class ChatRoomListResDTO{
-        private Long roomId;
+        private String roomId;
         private String roomName;
     }
 
